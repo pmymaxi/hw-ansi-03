@@ -1,0 +1,11 @@
+---
+user: "nginx"
+root_dir: "/usr/share/nginx/lighthouse"
+
+nginx_template_src: "templates/nginx.conf.j2"
+nginx_template_dest: "/etc/nginx/nginx.conf"
+nginx_template_mode: "0644"
+
+lighthouse_git_repo: "https://github.com/VKCOM/lighthouse.git"
+lighthouse_git_dest: "/usr/share/nginx/lighthouse"
+lighthouse_git_version: "master"

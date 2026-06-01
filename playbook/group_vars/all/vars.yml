@@ -1,0 +1,12 @@
+clickhouse_db_name: "nginx"
+clickhouse_table_name: "my_access_logs"
+
+clickhouse_nativ_port: 9000
+clickhouse_nativ_host: "127.0.0.1"
+clickhouse_nativ_delay: 2
+clickhouse_nativ_timeout: 30
+
+clickhouse_http_port: 8123
+clickhouse_http_host: "{{ hostvars['clickhouse-01'].ansible_host }}"
+clickhouse_http_delay: 2
+clickhouse_http_timeout: 30

@@ -1,0 +1,14 @@
+---
+clickhouse_repo_baseurl: "https://packages.clickhouse.com/rpm/stable/"
+clickhouse_repo_gpgcheck: false
+clickhouse_repo_enabled: true
+
+clickhouse_template_src: "templates/listen_host.xml.j2"
+clickhouse_template_dest: "/etc/clickhouse-server/config.d/listen_host.xml"
+clickhouse_template_mode: "0644"
+
+clickhouse_version: "22.3.3.44"
+clickhouse_packages:
+  - clickhouse-client
+  - clickhouse-server
+  - clickhouse-common-static

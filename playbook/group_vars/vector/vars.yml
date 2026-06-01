@@ -1,0 +1,16 @@
+---
+vector_repo_url: "https://packages.timber.io/vector/0.55.0/vector-0.55.0-1"
+vector_repo_arch: "x86_64"
+vector_repo_dest: "/tmp/vector.rpm"
+vector_dir_mod: "0755"
+vector_timeout: 30
+
+vector_include_logs: "/var/log/nginx/my_access.log"
+
+vector_dnf_repo_name: "/tmp/vector.rpm"
+vector_dnf_state: "present"
+vector_dnf_gpg_check: true
+
+vector_template_src: "templates/vector.yaml.j2"
+vector_template_dest: "/etc/vector/vector.yaml"
+vector_template_mode: "0644"

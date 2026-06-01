@@ -1,0 +1,142 @@
+---
+- name: Install Clickhouse
+  hosts: clickhouse
+  become: true
+  tags:
+    - clickhouse
+  handlers:
+    - name: Start clickhouse service
+      ansible.builtin.service:
+        name: clickhouse-server
+        enabled: true
+        state: restarted
+  tasks:
+    - name: Block clickhouse
+      block:
+        - name: Install yum-utils
+          ansible.builtin.dnf:
+            name:
+              - yum-utils
+        - name: Get clickhouse repo
+          ansible.builtin.yum_repository:
+            name: clickhouse
+            description: ClickHouse Repository
+            baseurl: "{{ clickhouse_repo_baseurl }}"
+            gpgcheck: "{{ clickhouse_repo_gpgcheck }}"
+            enabled: "{{ clickhouse_repo_enabled }}"
+        - name: Install clickhouse packages
+          ansible.builtin.dnf:
+            name:
+              - clickhouse-client-{{ clickhouse_version }}
+              - clickhouse-server-{{ clickhouse_version }}
+          notify: Start clickhouse service
+        - name: Past templates clickhouse
+          ansible.builtin.template:
+            src: "{{ clickhouse_template_src }}"
+            dest: "{{ clickhouse_template_dest }}"
+            mode: "{{ clickhouse_template_mode }}"
+        - name: Flush handlers
+          ansible.builtin.meta: flush_handlers
+        - name: Wait access port clickhouse
+          ansible.builtin.wait_for:
+            port: "{{ clickhouse_nativ_port }}"
+            host: "{{ clickhouse_nativ_host }}"
+            delay: "{{ clickhouse_nativ_delay }}"
+            timeout: "{{ clickhouse_nativ_timeout }}"
+        - name: Create database
+          ansible.builtin.command: clickhouse-client -q "CREATE DATABASE IF NOT EXISTS {{ clickhouse_db_name }};"
+          register: create_db
+          failed_when: create_db.rc != 0 and create_db.rc != 82
+          changed_when: create_db.rc == 0
+        - name: Create table
+          ansible.builtin.command: clickhouse-client -q "
+            CREATE TABLE IF NOT EXISTS {{ clickhouse_db_name }}.{{ clickhouse_table_name }} (
+            message String
+            )
+            ENGINE = MergeTree()
+            ORDER BY tuple()
+            "
+          register: create_table
+          failed_when: create_table.rc != 0
+          changed_when: create_db.rc == 0
+        - name: Debug create table
+          ansible.builtin.debug:
+            var: create_db
+        - name: Debug create table
+          ansible.builtin.debug:
+            var: create_table
+- name: Install vector
+  hosts: vector
+  become: true
+  tags:
+    - vector
+  handlers:
+    - name: Start vector
+      ansible.builtin.service:
+        name: vector
+        state: restarted
+        enabled: true
+  tasks:
+    - name: Block vector deploy
+      block:
+        - name: Get repo vector
+          ansible.builtin.get_url:
+            url: "{{ vector_repo_url }}.{{ vector_repo_arch }}.rpm"
+            dest: "{{ vector_repo_dest }}"
+            mode: "{{ vector_dir_mod }}"
+            timeout: "{{ vector_timeout }}"
+        - name: Install vector
+          ansible.builtin.dnf:
+            name: "{{ vector_dnf_repo_name }}"
+            state: "{{ vector_dnf_state }}"
+            disable_gpg_check: "{{ vector_dnf_gpg_check }}"
+        - name: Past templates vector
+          ansible.builtin.template:
+            src: "{{ vector_template_src }}"
+            dest: "{{ vector_template_dest }}"
+            mode: "{{ vector_template_mode }}"
+          notify: Start vector
+        - name: Wait access port clickhouse
+          ansible.builtin.wait_for:
+            port: "{{ clickhouse_http_port }}"
+            host: "{{ clickhouse_http_host }}"
+            delay: "{{ clickhouse_http_delay }}"
+            timeout: "{{ clickhouse_http_timeout }}"
+- name: Install nginx
+  hosts: nginx
+  become: true
+  tags:
+    - nginx
+  handlers:
+    - name: Start nginx
+      ansible.builtin.service:
+        name: nginx
+        state: restarted
+        enabled: true
+  pre_tasks:
+    - name: Install git
+      ansible.builtin.dnf:
+        name: git
+        state: present
+        disable_gpg_check: true
+  tasks:
+    - name: Block nginx deploy
+      block:
+        - name: Install nginx
+          ansible.builtin.dnf:
+            name: nginx
+            state: present
+            disable_gpg_check: true
+        - name: Past templates nginx
+          ansible.builtin.template:
+            src: "{{ nginx_template_src }}"
+            dest: "{{ nginx_template_dest }}"
+            mode: "{{ nginx_template_mode }}"
+          notify: Start nginx
+        - name: Git clone lighthouse in root nginx
+          ansible.builtin.git:
+            repo: "{{ lighthouse_git_repo }}"
+            dest: "{{ lighthouse_git_dest }}"
+            version: "{{ lighthouse_git_version }}"
+        - name: Flush handlers
+          ansible.builtin.meta: flush_handlers

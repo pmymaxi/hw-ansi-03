@@ -1,0 +1,16 @@
+sources:
+  nginx_logs:
+    type: file
+    include:
+      - "{{ vector_include_logs }}"
+    read_from: end
+
+sinks:
+  clickhouse:
+    type: clickhouse
+    inputs:
+      - nginx_logs
+    endpoint: "http://{{ clickhouse_http_host }}:{{ clickhouse_http_port }}"
+    database: "{{ clickhouse_db_name }}"
+    table: "{{ clickhouse_table_name }}"
+    skip_unknown_fields: true
